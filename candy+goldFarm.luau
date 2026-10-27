@@ -619,7 +619,7 @@ local function main()
 
     -- === Остальные сундуки ===
     if state.chestsEnabled then
-        local extraNames = {"WoodChest", "weaponCrate", "UltraWeaponCrate"}
+        local extraNames = {"WoodChest", "weaponCrate", "UltraWeaponCrate", "MediumWeaponCrate"}
         local hasAnyExtra = false
         for _, name in ipairs(extraNames) do
             if #findChestsByName(name) > 0 then hasAnyExtra = true break end
