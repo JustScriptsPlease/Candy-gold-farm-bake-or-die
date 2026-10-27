@@ -65,7 +65,6 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 title.TextYAlignment = Enum.TextYAlignment.Top
 title.Parent = frame
 
--- skip для тест-мода
 local skipBtn = Instance.new("TextButton")
 skipBtn.Size = UDim2.new(0, 50, 0, 18)
 skipBtn.Position = UDim2.new(1, -55, 0, 3)
@@ -82,7 +81,6 @@ skipBtn.MouseButton1Click:Connect(function()
     VIM:SendMouseButtonEvent(SKIP_X, SKIP_Y, 0, false, game, 1)
 end)
 
--- патч-лог
 local noteBtn = Instance.new("TextButton")
 noteBtn.Size = UDim2.new(0, 50, 0, 18)
 noteBtn.Position = UDim2.new(1, -55, 0, 3)
@@ -323,6 +321,7 @@ chestsBtn.MouseButton1Click:Connect(function()
     updateChestsBtn()
 end)
 
+-- 👇 ИЗМЕНЕНИЕ: Stop Everything меняет текст на Potassium.
 deactivateBtn.MouseButton1Click:Connect(function()
     state.running = false
     state.emulationActive = false
@@ -331,7 +330,8 @@ deactivateBtn.MouseButton1Click:Connect(function()
     state.chestsEnabled = false
     updateChestsBtn()
     statusLabel.Text = "Stop Everything"
-    print("Stop Everything")
+    deactivateBtn.Text = "Potassium."
+    print("Stop Everything -> Potassium.")
 end)
 
 -- ====== КАМЕРА ВНИЗ ======
@@ -516,7 +516,7 @@ local function clickAt(x, y, isSkip)
 end
 
 -- ====== СБОР СУНДУКА ======
-local function collectChest(chest)
+local function collectChest(chest, useJump)
     local prompt
     for _, d in ipairs(chest:GetDescendants()) do
         if d:IsA("ProximityPrompt") then
@@ -528,6 +528,17 @@ local function collectChest(chest)
     disablePromptDelay(prompt)
     teleportTo(chest)
     task.wait(0.1)
+    
+    -- 👇 ДОБАВЛЕНО: Прыжок (Space/W) для ККЧ тоже
+    if useJump then
+        pcall(function()
+            local key = jump and Enum.KeyCode.Space or Enum.KeyCode.W
+            VIM:SendKeyEvent(true, key, false, game)
+            task.wait(0.25)
+            VIM:SendKeyEvent(false, key, false, game)
+        end)
+    end
+    
     pcall(function()
         prompt:InputHoldBegin()
         task.wait(0.05)
@@ -592,7 +603,8 @@ local function main()
                     task.wait(CANDY_INTERVAL)
                 end
             end
-            collectChest(chest)
+            -- 👇 Передаём true, чтобы сработал прыжок (Space/W)
+            collectChest(chest, true)
             task.wait(0.5)
             local newCandies = findModels({"CandyCorn"})
             for _, c in ipairs(newCandies) do
