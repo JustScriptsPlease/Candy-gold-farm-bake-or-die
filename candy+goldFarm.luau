@@ -216,7 +216,7 @@ Skip x/y - поставить на кнопку SKIP когда идет кат-
 Просьба ставить координаты именно x - y а не y - x так как первое всегда x а второе - y. 
 
 Кнопка "Enable Chests": ON - включает в список фарма сундуки. OFF - выключает (просьба выключить до фарма или поставить переменную CHEST_PROMPT_WAIT на 0) 
-Stop all progresses: выключает фарм, без возможности включения. Просьба не кликать просто так. 
+Stop Everything: выключает фарм, без возможности включения. Просьба не кликать просто так. 
 Test mode: дает возможность следить за тем что происходит, а так же заменяет лог на кнопку скип. Не удаляет гуи. 
 
 Работает так: в лобби: скрипт обнаруживает лобби по скорости завершения фарма, жмет на кнопку play - запускает в матч. В матче: телепортируется к candy corn, собирая их, если появляется кат-сцена - скипает. После того как Кенди корн закончился - собирает candy corn chest,  и переходит к сундукам (ради золотых кусочков). После этого умирает и выходит (чтобы автоматически ливнуть если кто то остался в живых). Просьба поставить на авто-экзекьют. 
@@ -321,7 +321,7 @@ chestsBtn.MouseButton1Click:Connect(function()
     updateChestsBtn()
 end)
 
--- 👇 ИЗМЕНЕНИЕ: Stop Everything меняет текст на Potassium.
+-- 👇 Stop Everything меняет текст на Potassium. и останавливает лобби-цикл
 deactivateBtn.MouseButton1Click:Connect(function()
     state.running = false
     state.emulationActive = false
@@ -529,7 +529,6 @@ local function collectChest(chest, useJump)
     teleportTo(chest)
     task.wait(0.1)
     
-    -- 👇 ДОБАВЛЕНО: Прыжок (Space/W) для ККЧ тоже
     if useJump then
         pcall(function()
             local key = jump and Enum.KeyCode.Space or Enum.KeyCode.W
@@ -603,7 +602,6 @@ local function main()
                     task.wait(CANDY_INTERVAL)
                 end
             end
-            -- 👇 Передаём true, чтобы сработал прыжок (Space/W)
             collectChest(chest, true)
             task.wait(0.5)
             local newCandies = findModels({"CandyCorn"})
@@ -666,11 +664,14 @@ local function main()
         state.emulationActive = false
         state.promptActive = false
         
-        while true do
+        -- 👇 Цикл лобби теперь проверяет state.running и прерывается при Stop Everything
+        while state.running do
             task.wait(LOBBY_WAIT)
+            if not state.running then break end
             clickAt(LOBBY_X, LOBBY_Y, false)
             print("вы в лобби.")
         end
+        return
     end
 
     statusLabel.Text = "кончились объекты. Перезапускаем цикл..."
@@ -682,7 +683,7 @@ local function main()
     end
 
     local function attemptExit()
-        while true do
+        while state.running do
             state.exitAttempts = state.exitAttempts + 1
             statusLabel.Text = "не удалось выйти: попытка " .. state.exitAttempts
             print("цикл завершён. Перезапуск.")
