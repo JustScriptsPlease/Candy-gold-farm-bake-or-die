@@ -30,7 +30,8 @@ local state = {
     promptActive = false,
     skipActive = true,
     devMode = false,
-    exitAttempts = 0
+    exitAttempts = 0,
+    stopClicked = false -- Флаг для полной остановки
 }
 
 -- ====== GUI ======
@@ -328,6 +329,7 @@ deactivateBtn.MouseButton1Click:Connect(function()
     state.promptActive = false
     state.skipActive = false
     state.chestsEnabled = false
+    state.stopClicked = true -- 👈 Блокируем лобби-цикл
     updateChestsBtn()
     statusLabel.Text = "Stop Everything"
     deactivateBtn.Text = "Potassium."
@@ -617,9 +619,10 @@ local function main()
 
     state.skipActive = false
 
-    -- === Остальные сундуки ===
+    -- === Остальные сундуки (БЕЗ medium и Ultra) ===
     if state.chestsEnabled then
-        local extraNames = {"WoodChest", "weaponCrate", "UltraWeaponCrate", "MediumWeaponCrate", "mediumWeaponCrate"}
+        -- 👇 Убраны mediumWeaponCrate и UltraWeaponCrate
+        local extraNames = {"WoodChest", "weaponCrate"}
         local hasAnyExtra = false
         for _, name in ipairs(extraNames) do
             if #findChestsByName(name) > 0 then hasAnyExtra = true break end
@@ -664,13 +667,15 @@ local function main()
         state.emulationActive = false
         state.promptActive = false
         
-        -- 👇 Цикл лобби теперь проверяет state.running и прерывается при Stop Everything
-        while state.running do
-            task.wait(LOBBY_WAIT)
-            if not state.running then break end
-            clickAt(LOBBY_X, LOBBY_Y, false)
-            print("вы в лобби.")
-        end
+        -- 👇 ИСПРАВЛЕНИЕ: Лобби-цикл теперь всегда работает, пока не нажат Стоп
+        task.spawn(function()
+            while not state.stopClicked do
+                task.wait(LOBBY_WAIT)
+                if state.stopClicked then break end
+                clickAt(LOBBY_X, LOBBY_Y, false)
+                print("вы в лобби.")
+            end
+        end)
         return
     end
 
@@ -683,7 +688,7 @@ local function main()
     end
 
     local function attemptExit()
-        while state.running do
+        while not state.stopClicked do
             state.exitAttempts = state.exitAttempts + 1
             statusLabel.Text = "не удалось выйти: попытка " .. state.exitAttempts
             print("цикл завершён. Перезапуск.")
